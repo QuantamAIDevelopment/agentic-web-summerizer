@@ -1,5 +1,6 @@
 # tools/vectorstore.py
 
+import os
 import logging
 from typing import List, Dict, Optional, Union
 
@@ -8,6 +9,17 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.embeddings import Embeddings
+
+# Import default keys
+try:
+    from ..default_keys import (
+        DEFAULT_OPENAI_API_KEY,
+        USE_DEFAULT_KEYS
+    )
+except ImportError:
+    # Fallback if import fails
+    DEFAULT_OPENAI_API_KEY = ""
+    USE_DEFAULT_KEYS = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +44,18 @@ def get_embeddings(provider: str = "openai", model_name: Optional[str] = None) -
     """
     if provider == "openai":
         logger.info("Using LangChain's OpenAI embeddings integration")
+        # Check for OpenAI API key
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            # Use default key if enabled and available
+            if USE_DEFAULT_KEYS and DEFAULT_OPENAI_API_KEY:
+                logger.info("Using default OpenAI API key for embeddings")
+                os.environ["OPENAI_API_KEY"] = DEFAULT_OPENAI_API_KEY
+                return OpenAIEmbeddings(openai_api_key=DEFAULT_OPENAI_API_KEY)
+            else:
+                raise EnvironmentError(
+                    "OPENAI_API_KEY environment variable is required for OpenAI embeddings"
+                )
         return OpenAIEmbeddings()
     elif provider == "huggingface":
         model = model_name or "all-MiniLM-L6-v2"

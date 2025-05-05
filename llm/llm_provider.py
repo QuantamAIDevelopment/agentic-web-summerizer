@@ -15,6 +15,14 @@ from langchain.callbacks.tracers.langchain import LangChainTracer
 from langchain.callbacks.tracers import ConsoleCallbackHandler
 from langchain.callbacks.manager import CallbackManager
 
+# Import default keys
+from default_keys import (
+    DEFAULT_OPENAI_API_KEY,
+    DEFAULT_GROQ_API_KEY,
+    DEFAULT_LANGCHAIN_API_KEY,
+    USE_DEFAULT_KEYS
+)
+
 logger = logging.getLogger(__name__)
 
 def setup_tracing(project_name: str = "agentic-web-summarizer") -> Optional[CallbackManager]:
@@ -30,8 +38,14 @@ def setup_tracing(project_name: str = "agentic-web-summarizer") -> Optional[Call
     langchain_api_key = os.getenv("LANGCHAIN_API_KEY")
     
     if not langchain_api_key:
-        logger.info("LangChain API key not found. Tracing disabled.")
-        return None
+        # Use default key if enabled and available
+        if USE_DEFAULT_KEYS and DEFAULT_LANGCHAIN_API_KEY:
+            logger.info("Using default LangChain API key")
+            os.environ["LANGCHAIN_API_KEY"] = DEFAULT_LANGCHAIN_API_KEY
+            langchain_api_key = DEFAULT_LANGCHAIN_API_KEY
+        else:
+            logger.info("LangChain API key not found. Tracing disabled.")
+            return None
     
     try:
         # Set up tracing with LangChain
@@ -95,10 +109,17 @@ def get_llm(
     
     if provider == 'groq':
         # Check for Groq API key
-        if not os.getenv("GROQ_API_KEY"):
-            raise EnvironmentError(
-                "GROQ_API_KEY environment variable is required for LangChain's Groq integration"
-            )
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        if not groq_api_key:
+            # Use default key if enabled and available
+            if USE_DEFAULT_KEYS and DEFAULT_GROQ_API_KEY:
+                logger.info("Using default Groq API key")
+                os.environ["GROQ_API_KEY"] = DEFAULT_GROQ_API_KEY
+                kwargs["api_key"] = DEFAULT_GROQ_API_KEY
+            else:
+                raise EnvironmentError(
+                    "GROQ_API_KEY environment variable is required for LangChain's Groq integration"
+                )
         
         # Set default model if not provided in model_kwargs
         if 'model' not in kwargs:
@@ -109,10 +130,17 @@ def get_llm(
     
     elif provider == 'openai':
         # Check for OpenAI API key
-        if not os.getenv("OPENAI_API_KEY"):
-            raise EnvironmentError(
-                "OPENAI_API_KEY environment variable is required for LangChain's OpenAI integration"
-            )
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            # Use default key if enabled and available
+            if USE_DEFAULT_KEYS and DEFAULT_OPENAI_API_KEY:
+                logger.info("Using default OpenAI API key")
+                os.environ["OPENAI_API_KEY"] = DEFAULT_OPENAI_API_KEY
+                kwargs["api_key"] = DEFAULT_OPENAI_API_KEY
+            else:
+                raise EnvironmentError(
+                    "OPENAI_API_KEY environment variable is required for LangChain's OpenAI integration"
+                )
         
         # Set default model if not provided in model_kwargs
         if 'model' not in kwargs:

@@ -35,6 +35,9 @@ from tools.fetcher import fetch_url_content
 from tools.summarizer import summarize_text
 from tools.vectorstore import get_embeddings, create_faiss_store, store_summary, save_vectorstore
 
+# Import default keys configuration
+from default_keys import USE_DEFAULT_KEYS
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,8 +64,18 @@ with st.sidebar:
     
     # API Keys section
     with st.expander("API Keys", expanded=False):
-        st.info("API keys are stored in session state and not saved to disk")
+        if USE_DEFAULT_KEYS:
+            st.success("Default API keys are available. You can use your own keys or leave fields empty to use default keys.")
+        else:
+            st.info("API keys are stored in session state and not saved to disk")
         
+        # Use default keys option
+        use_default = st.checkbox(
+            "Use default API keys when available", 
+            value=USE_DEFAULT_KEYS,
+            help="When checked, the application will use built-in API keys if you don't provide your own"
+        )
+        st.info(" If you are not selecting the default keys Choose any one LLM model and pass the API keys to It.")
         # OpenAI API Key
         openai_api_key = st.text_input(
             "OpenAI API Key",
@@ -72,6 +85,8 @@ with st.sidebar:
         )
         if openai_api_key:
             os.environ["OPENAI_API_KEY"] = openai_api_key
+        elif not use_default:
+            st.warning("No OpenAI API key provided. Required for OpenAI models and embeddings.")
             
         # Groq API Key
         groq_api_key = st.text_input(
@@ -82,6 +97,8 @@ with st.sidebar:
         )
         if groq_api_key:
             os.environ["GROQ_API_KEY"] = groq_api_key
+        elif not use_default:
+            st.warning("No Groq API key provided. Required for Groq models.")
             
         # LangChain API Key for tracing
         langchain_api_key = st.text_input(
